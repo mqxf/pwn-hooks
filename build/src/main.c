@@ -16,6 +16,7 @@ void run(args_t* args);
 char** get_modules(size_t* len);
 void add_module(char* module);
 void remove_module(char* module);
+int contains(char** array, size_t len, char* key);
 
 int main(int argc, char** argv) {
     if (system(NULL) == 0) {
@@ -40,11 +41,13 @@ args_t* parse_args(int argc, char** argv) {
 
 		if (argc < 3) {
 			args->all = 1;
+            args->runWithLen = 0;
 			return args;
 		}
 
 		if (strcmp(argv[2], "none") == 0) {
 			args->all = 0;
+            args->runWithLen = 0;
 			return args;
 		}
 		else if (strcmp(argv[2], "add") == 0) {
@@ -128,16 +131,83 @@ args_t* parse_args(int argc, char** argv) {
 }
 
 void run(args_t* args) {
-    system("cd hooks");
-    system("make hooks");
-    system("cd ..");
-	//find all files
-	//if all == 0
-	//put in only runWith
-	//else if all = 1
-	//put in all except runWith
-	//export to LD_PRELOAD
-	system("./PwnAdventure3-Linux-Shipping");
+    FILE* runFile = fopen("run.sh", "w");
+
+    fprintf(runFile, "cd hooks && make && cd ..\n");
+
+    char* path = realpath("hooks/bin/", NULL);
+
+    char* ldpp = calloc(15 + strlen(path), sizeof(char));
+
+    strcpy(ldpp, "export LDPP=");
+    strcat(ldpp, path);
+
+    fprintf(runFile, "%s\n", ldpp);
+
+    if (args->all == 0) {
+        if (args->runWithLen > 0) {
+            char* cmd = calloc(19, sizeof(char));
+            size_t len;
+            strcpy(cmd, "export LD_PRELOAD=");
+            char** modules = get_modules(&len);
+            for (size_t i = 0; i < len; i++) {
+                if (contains(args->runWith, args->runWithLen, strtok(modules[i], "\n")) == 1) {
+                    cmd = realloc(cmd, (strlen(cmd) + strlen(modules[i]) + 12) * sizeof(char));
+                    strcat(cmd, "$LDPP/");
+                    strcat(cmd, strtok(modules[i], "\n"));
+                    strcat(cmd, ".so:");
+                }
+            }
+            fprintf(runFile, "%s\n", cmd);
+        }
+        else {
+            fprintf(runFile, "export LD_PRELOAD=\n");
+        }
+    }
+    else if (args->all == 1) {
+        if (args->runWithLen > 0) {
+            char* cmd = calloc(19, sizeof(char));
+            size_t len;
+            strcpy(cmd, "export LD_PRELOAD=");
+            char** modules = get_modules(&len);
+            for (size_t i = 0; i < len; i++) {
+                if (contains(args->runWith, args->runWithLen, strtok(modules[i], "\n")) == 0) {
+                    cmd = realloc(cmd, (strlen(cmd) + strlen(modules[i]) + 12) * sizeof(char));
+                    strcat(cmd, "$LDPP/");
+                    strcat(cmd, strtok(modules[i], "\n"));
+                    strcat(cmd, ".so:");
+                }
+            }
+            fprintf(runFile, "%s\n", cmd);
+        }
+        else if (args->runWithLen == 0) {
+            char* cmd = calloc(19, sizeof(char));
+            size_t len;
+            strcpy(cmd, "export LD_PRELOAD=");
+            char** modules = get_modules(&len);
+            for (size_t i = 0; i < len; i++) {
+                cmd = realloc(cmd, (strlen(cmd) + strlen(modules[i]) + 20) * sizeof(char));
+                strcat(cmd, "$LDPP/");
+                strcat(cmd, strtok(modules[i], "\n"));
+                strcat(cmd, ".so:");
+            }
+            fprintf(runFile, "%s\n", cmd);
+        }
+        else {
+            printf("Error! Something went wrong when parsing modules!\n");
+            exit(1);
+        }
+    }
+    else {
+        printf("Error! Something went wrong trying to parse command arguments!\n");
+        exit(1);
+    }
+	fprintf(runFile, "./PwnAdventure3-Linux-Shipping");
+    fclose(runFile);
+
+    system("chmod +x run.sh");
+    system("./run.sh");
+    system("rm run.sh");
 }
 
 char** get_modules(size_t* len) {
@@ -199,3 +269,9 @@ void remove_module(char* module) {
     fprintf(modFile, "%s", newModules);
 }
 
+int contains(char** array, size_t len, char* key) {
+    for (size_t i = 0; i < len; i++) {
+        if (strcmp(array[i], key) == 0) return 1;
+    }
+    return 0;
+}

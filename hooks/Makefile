@@ -1,7 +1,7 @@
-sources=(wildcard src/*.cpp)
-libs=($sources:.cpp=.so)
+sources=$(wildcard src/*.cpp)
+libs=$(sources:.cpp=.so)
 
-hooks: ($libs)
+hooks: $(libs)
 	mv src/*.so bin/.
 
 %.so: %.cpp

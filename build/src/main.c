@@ -122,6 +122,15 @@ args_t* parse_args(int argc, char** argv) {
 
         remove_module(argv[2]);
 	}
+    else if (strcmp(argv[1], "list") == 0) {
+        args->run = 0;
+        size_t len = 0;
+        char** list = get_modules(&len);
+        printf("Listing all modules:\n");
+        for (size_t i = 0; i < len; i++) {
+            printf("- %s\n", list[i]);
+        }
+    }
 	else {
 		printf("Error: Invalid argument!\n");
 		exit(1);

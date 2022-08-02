@@ -6,6 +6,7 @@ hook \<argument\> \[\<arguments\>\]
 - edit \<module\> - edit a module (or create a new one)
 - remove \<module\> - remove a module
 - run \<argument\> \[\<modules\>\]
+- list - lists all modules
 
 # Run Command
 - no argument - run with all modules

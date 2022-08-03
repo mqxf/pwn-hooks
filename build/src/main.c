@@ -6,9 +6,9 @@
 
 typedef struct _ARGS_T {
 	uint8_t run;
-	char** runWith;
 	uint16_t runWithLen;
 	uint8_t all;
+	char** runWith;
 } args_t;
 
 args_t* parse_args(int argc, char** argv);
@@ -24,8 +24,11 @@ int main(int argc, char** argv) {
         exit(1);
     }
 	args_t* args = parse_args(argc, argv);
-	if (args->run == 0) return 0;
-	run(args);
+	if (args->run == 1) {
+	    run(args);
+    }
+    free(args);
+    return 0;
 }
 
 args_t* parse_args(int argc, char** argv) {
@@ -257,8 +260,7 @@ void add_module(char* module) {
     fprintf(modFile, "%s", module);
     fprintf(modFile, "\n");
     fclose(modFile);
-
-    printf("file write\n");
+    free(modules);
 }
 
 void remove_module(char* module) {
@@ -276,6 +278,9 @@ void remove_module(char* module) {
 
     FILE* modFile = fopen("build/modules.dat", "w");
     fprintf(modFile, "%s", newModules);
+    fclose(modFile);
+    free(newModules);
+    free(modules);
 }
 
 int contains(char** array, size_t len, char* key) {
